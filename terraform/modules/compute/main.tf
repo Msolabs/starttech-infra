@@ -1,3 +1,7 @@
+# =========================
+# SECURITY GROUPS
+# =========================
+
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-alb-sg"
   description = "ALB Security Group"
@@ -37,6 +41,10 @@ resource "aws_security_group" "backend" {
   }
 }
 
+# =========================
+# LOAD BALANCER LAYER
+# =========================
+
 resource "aws_lb_target_group" "backend" {
   name     = "${var.project_name}-tg"
   port     = 8080
@@ -75,5 +83,97 @@ resource "aws_lb_listener" "http" {
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.backend.arn
+  }
+}
+
+# =========================
+# IAM CONFIGURATION
+# =========================
+
+resource "aws_iam_role" "ec2_role" {
+  name = "${var.project_name}-ec2-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "cloudwatch" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "${var.project_name}-instance-profile"
+  role = aws_iam_role.ec2_role.name
+}
+
+# =========================
+# COMPUTE LAYER (ASG)
+# =========================
+
+resource "aws_launch_template" "backend" {
+  name_prefix   = "${var.project_name}-lt"
+  image_id      = var.ami_id
+  instance_type = var.instance_type
+
+  vpc_security_group_ids = [
+    aws_security_group.backend.id
+  ]
+
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ec2_profile.name
+  }
+
+  user_data = base64encode(<<EOF
+#!/bin/bash
+yum update -y
+EOF
+  )
+}
+
+resource "aws_autoscaling_group" "backend" {
+  name = "${var.project_name}-asg"
+
+  desired_capacity = 1
+  min_size         = 1
+  max_size         = 2
+
+  vpc_zone_identifier = [
+    var.private_subnet_a_id,
+    var.private_subnet_b_id
+  ]
+
+  target_group_arns = [
+    aws_lb_target_group.backend.arn
+  ]
+
+  launch_template {
+    id      = aws_launch_template.backend.id
+    version = "$Latest"
+  }
+
+  health_check_type = "ELB"
+}
+
+resource "aws_autoscaling_policy" "cpu_scaling" {
+  name                   = "${var.project_name}-cpu-scaling"
+  autoscaling_group_name = aws_autoscaling_group.backend.name
+
+  policy_type = "TargetTrackingScaling"
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
+
+    target_value = 70
   }
 }
