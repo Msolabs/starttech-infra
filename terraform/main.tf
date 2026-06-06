@@ -51,6 +51,30 @@ module "compute" {
   private_subnet_a_id = module.networking.private_subnet_a_id
   private_subnet_b_id = module.networking.private_subnet_b_id
 
-  ami_id        = var.ami_id
   instance_type = var.instance_type
+}
+
+
+# =========================
+# Storage Module
+# =========================
+
+module "storage" {
+  source = "./modules/storage"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+# =========================
+# Monitoring Module
+# =========================
+
+module "monitoring" {
+  source = "./modules/monitoring"
+
+  project_name = var.project_name
+
+  alb_arn  = module.compute.alb_arn
+  asg_name = module.compute.asg_name
 }

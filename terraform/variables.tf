@@ -42,12 +42,11 @@ variable "private_subnet_b" {
 # =========================
 # EC2 Configuration
 # =========================
+
 variable "ami_id" {
-  description = "Amazon Linux AMI"
+  description = "AMI ID for EC2 instance"
   type        = string
 }
-
-
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string

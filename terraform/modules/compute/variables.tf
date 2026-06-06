@@ -39,13 +39,3 @@ variable "instance_type" {
     error_message = "Only t2 or t3 instance types are allowed for cost control."
   }
 }
-
-variable "ami_id" {
-  type        = string
-  description = "AMI ID for backend EC2 instances"
-
-  validation {
-    condition     = length(var.ami_id) > 10
-    error_message = "AMI ID must be a valid EC2 AMI identifier."
-  }
-}

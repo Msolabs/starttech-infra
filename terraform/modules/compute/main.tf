@@ -1,3 +1,21 @@
+
+
+# =========================
+# Amazon Linux 2023 AMI
+# =========================
+
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+
+  owners = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+}
+
+
 # =========================
 # SECURITY GROUPS
 # =========================
@@ -121,7 +139,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 
 resource "aws_launch_template" "backend" {
   name_prefix   = "${var.project_name}-lt"
-  image_id      = var.ami_id
+  image_id      = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
 
   vpc_security_group_ids = [
@@ -132,13 +150,39 @@ resource "aws_launch_template" "backend" {
     name = aws_iam_instance_profile.ec2_profile.name
   }
 
-  user_data = base64encode(<<EOF
+ user_data = base64encode(<<EOF
 #!/bin/bash
-yum update -y
-EOF
-  )
-}
 
+dnf update -y
+
+cat > /tmp/server.py <<'PYTHON'
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/health":
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"OK")
+        else:
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"StartTech Backend Running")
+
+HTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
+PYTHON
+
+python3 /tmp/server.py &
+EOF
+)
+tag_specifications {
+  resource_type = "instance"
+
+  tags = {
+    Name = "${var.project_name}-backend"
+  }
+}
+}
 resource "aws_autoscaling_group" "backend" {
   name = "${var.project_name}-asg"
 
