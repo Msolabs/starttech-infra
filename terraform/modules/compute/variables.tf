@@ -32,7 +32,7 @@ variable "instance_type" {
   type        = string
   description = "EC2 instance type for backend servers"
 
-  default = "t2.micro"
+  default = "t3.micro"
 
   validation {
     condition     = can(regex("t2|t3", var.instance_type))

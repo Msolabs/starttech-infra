@@ -51,5 +51,6 @@ module "compute" {
   private_subnet_a_id = module.networking.private_subnet_a_id
   private_subnet_b_id = module.networking.private_subnet_b_id
 
-  ami_id = var.ami_id
+  ami_id        = var.ami_id
+  instance_type = var.instance_type
 }
