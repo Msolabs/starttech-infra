@@ -102,6 +102,20 @@ GitHub Actions automates:
 * CloudWatch monitoring
 * Secrets stored using GitHub Secrets
 
+## Cache Layer
+
+Amazon ElastiCache Redis is provisioned through the Terraform cache module.
+
+Resources:
+- Redis Cluster
+- Redis Security Group
+- Redis Subnet Group
+
+Purpose:
+- Session storage
+- Application caching
+- Performance optimization
+
 ## Author
 
 Moshood Owolabi
