@@ -66,6 +66,16 @@ module "storage" {
   environment  = var.environment
 }
 
+module "cache" {
+  source = "./modules/cache"
+
+  project_name = var.project_name
+
+  vpc_id = module.networking.vpc_id
+
+  private_subnet_a_id = module.networking.private_subnet_a_id
+  private_subnet_b_id = module.networking.private_subnet_b_id
+}
 # =========================
 # Monitoring Module
 # =========================

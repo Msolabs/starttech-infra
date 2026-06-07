@@ -150,7 +150,7 @@ resource "aws_launch_template" "backend" {
     name = aws_iam_instance_profile.ec2_profile.name
   }
 
- user_data = base64encode(<<EOF
+  user_data = base64encode(<<EOF
 #!/bin/bash
 
 dnf update -y
@@ -174,14 +174,14 @@ PYTHON
 
 python3 /tmp/server.py &
 EOF
-)
-tag_specifications {
-  resource_type = "instance"
+  )
+  tag_specifications {
+    resource_type = "instance"
 
-  tags = {
-    Name = "${var.project_name}-backend"
+    tags = {
+      Name = "${var.project_name}-backend"
+    }
   }
-}
 }
 resource "aws_autoscaling_group" "backend" {
   name = "${var.project_name}-asg"
